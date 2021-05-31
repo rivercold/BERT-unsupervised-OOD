@@ -80,12 +80,12 @@ def detection_performance(scores, Y, outf, tag='TMP'):
     
 
 def load_sst_dataset():
-    train_df = load_extra_dataset("./dataset/sst-train.txt", label=1)
-    test_df = load_extra_dataset("./dataset/sst-test.txt", label=1)
-    ood_snli_df = load_extra_dataset("./dataset/snli_dev.txt", drop_index=True, label=0)
-    ood_rte_df = load_extra_dataset("./dataset/rte-dev.txt", drop_index=True, label=0)
-    ood_20ng_df = load_extra_dataset("./dataset/20ng-test.txt", drop_index=True, label=0)
-    ood_multi30k_df = load_extra_dataset("./dataset/multi30k-val.txt", drop_index=True, label=0)
+    train_df = load_extra_dataset("./dataset/sst/sst-train.txt", label=1)
+    test_df = load_extra_dataset("./dataset/sst/sst-test.txt", label=1)
+    ood_snli_df = load_extra_dataset("./dataset/sst/snli-dev.txt", drop_index=True, label=0)
+    ood_rte_df = load_extra_dataset("./dataset/sst/rte-dev.txt", drop_index=True, label=0)
+    ood_20ng_df = load_extra_dataset("./dataset/sst/20ng-test.txt", drop_index=True, label=0)
+    ood_multi30k_df = load_extra_dataset("./dataset/sst/multi30k-val.txt", drop_index=True, label=0)
     ood_snli_df = ood_snli_df.sample(n=500, random_state=seed)
     ood_rte_df = ood_rte_df.sample(n=500, random_state=seed)
     ood_20ng_df = ood_20ng_df.sample(n=500, random_state=seed)
@@ -112,11 +112,6 @@ def load_extra_dataset(file_path="./dataset/SSTSentences.txt", drop_index=False,
         df.drop(columns='index', inplace=True)
     df.dropna(inplace=True)
     return df
-
-def compute_false_alarm_rates(test_scores, ood_scores, num=500):
-    threshold = np.percentile(ood_scores, 5)
-    false_neg = test_scores > threshold
-    return false_neg
 
 def frequency_OOD_detect(args):
     from sklearn.feature_extraction.text import TfidfVectorizer
@@ -160,8 +155,6 @@ def frequency_OOD_detect(args):
             ood_labels = np.ones_like(ood_scores) 
             test_labels = np.zeros_like(test_scores)
             Y_test = np.concatenate((ood_labels, test_labels))
-            if data_type == "sst":
-                false_alarm_rates = compute_false_alarm_rates(test_scores, ood_scores)
             
             raw_results = detection_performance(X_scores, Y_test, 'feats_logs', tag='XXX')
             neg_resuls = detection_performance(-X_scores, Y_test, 'feats_logs', tag='XXX')
@@ -174,8 +167,6 @@ def frequency_OOD_detect(args):
                 best_ours_results = results
                 best_hypers = "{}-{}".format(k, nuu)
                 d = {"X_scores": X_scores, "Y_test": Y_test}
-                if data_type == "sst":
-                    best_false_alarm_rates = false_alarm_rates
         
     mtypes = ['AUROC', 'DTACC', 'AUIN', 'AUOUT']
     for mtype in mtypes:
@@ -185,8 +176,6 @@ def frequency_OOD_detect(args):
     print(' {val:6.2f}'.format(val=100.*best_ours_results['AUIN']), end='')
     print(' {val:6.2f}\n'.format(val=100.*best_ours_results['AUOUT']), end='')
     print("best hyper %s"%(best_hypers)) 
-    if data_type == "sst":
-        print ("false ", best_false_alarm_rates)
     print("saving best model results")
     with open("./outputs/{}-{}.pkl".format(data_type, args.type), "wb") as f:
         pickle.dump(d, f)
@@ -236,9 +225,9 @@ def single_layer_OOD_detect(args):
         train_df  = load_dataset('clinc150_train', data_type=data_type)
         test_df = load_dataset('clinc150_test', data_type=data_type)
 
-    for layer in [-1, -2]:
+    for layer in [-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12]:
     # for layer in ['all-max', 'all-mean']:
-        for use_cls in [True]:
+        for use_cls in [False, True]:
             print ("--------- we are using {} layer and {} to represent sequence --------".format(layer, "[CLS]" if use_cls else "AVG"))
             ood_feats = model.get_one_layer_feature(ood_df['text'].values.tolist(), use_layer=layer, use_cls=use_cls)  # n_sample x 768 
             train_feats = model.get_one_layer_feature(train_df['text'].values.tolist(), use_layer=layer, use_cls=use_cls) 
@@ -258,8 +247,7 @@ def single_layer_OOD_detect(args):
                     ood_labels = np.ones_like(ood_scores) 
                     test_labels = np.zeros_like(test_scores)
                     Y_test = np.concatenate((ood_labels, test_labels))
-                    if data_type == "sst":
-                        false_alarm_rates = compute_false_alarm_rates(test_scores, ood_scores)
+
                     raw_results = detection_performance(X_scores, Y_test, 'feats_logs', tag='XXX')
                     neg_resuls = detection_performance(-X_scores, Y_test, 'feats_logs', tag='XXX')
                     if sum(raw_results["XXX"].values()) < sum(neg_resuls["XXX"].values()):
@@ -270,8 +258,6 @@ def single_layer_OOD_detect(args):
                         best_ours_results = results
                         best_hypers = "{}-{}".format(k, nuu)
                         d = {"X_scores": X_scores, "Y_test": Y_test, "Features": np.concatenate((test_scores, ood_scores))}
-                        if data_type == "sst":
-                            best_false_alarm_rates = false_alarm_rates
                 
             mtypes = ['AUROC', 'DTACC', 'AUIN', 'AUOUT']
             for mtype in mtypes:
@@ -281,8 +267,6 @@ def single_layer_OOD_detect(args):
             print(' {val:6.2f}'.format(val=100.*best_ours_results['AUIN']), end='')
             print(' {val:6.2f}\n'.format(val=100.*best_ours_results['AUOUT']), end='')
             print("best hyper %s"%(best_hypers)) 
-            if data_type == "sst":
-                print ("false alarm rates", false_alarm_rates)
             print('-------------------------------')
 
     # print("saving best model results")
@@ -382,8 +366,6 @@ def MDF_OOD_detect(args):
                     best_hypers = '{}-{}'.format(k, nuu)
                     # save data for plotting 
                     d = {"X_scores": X_scores, "Y_test": Y_test, "Features": np.concatenate((test_mah_scores, ood_mah_scores))}
-                    if data_type == "sst":
-                        best_false_alarm_rates = false_alarm_rates
         mtypes = ['AUROC', 'DTACC', 'AUIN', 'AUOUT']
         for mtype in mtypes:
             print(' {mtype:6s}'.format(mtype=mtype), end='')
@@ -392,8 +374,6 @@ def MDF_OOD_detect(args):
         print(' {val:6.2f}'.format(val=100.*best_ours_results['TMP']['AUIN']), end='')
         print(' {val:6.2f}\n'.format(val=100.*best_ours_results['TMP']['AUOUT']), end='')
         print("best hyper %s"%(best_hypers)) 
-        if data_type == "sst":
-            print ("false alarm rates", false_alarm_rates)
         print ("saving data for plotting")
         with open("./outputs/{}_{}_{}.pkl".format(data_type, args.model_class, load_path.split("/")[-1]), "wb") as f:
             pickle.dump(d, f)

@@ -53,7 +53,7 @@ class our_model(ClassificationModel):
             with torch.no_grad():
                 batch_all_features = self.get_hidden_features(**inputs, use_cls=use_cls)
                 for i in range(num_layers):
-                    all_layer_features[i].append(batch_all_features[i])
+                    all_layer_features[i].append(batch_all_features[i].cpu())  # save gpu memory
         
         mean_list = []
         precision_list = []
@@ -64,8 +64,8 @@ class our_model(ClassificationModel):
             group_lasso.fit(X.numpy())
             temp_precision = group_lasso.precision_
             temp_precision = torch.from_numpy(temp_precision).float()
-            mean_list.append(sample_mean)
-            precision_list.append(temp_precision)
+            mean_list.append(sample_mean.to(device))
+            precision_list.append(temp_precision.to(device))
 
         return mean_list, precision_list
 
@@ -107,7 +107,7 @@ class our_model(ClassificationModel):
         return np.concatenate(total_mah_scores, axis=1)
 
 
-    def get_alternative_distance_score(self, test_sentences, sample_mean, precision, use_cls=True):
+    def get_alternative_distance_score(self, test_sentences, sample_mean, use_cls=True):
         device = self.device 
         model = self.model 
         args = self.args 
@@ -119,14 +119,13 @@ class our_model(ClassificationModel):
 
         test_sampler = SequentialSampler(test_dataset)
         test_dataloader = DataLoader(test_dataset, sampler=test_sampler, batch_size=128)
-        cosine_sim_nn = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
+        # cosine_sim_nn = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
 
         model.eval()
-        all_layer_features = []
-        num_outputs = 13
-        total_mah_scores = []
-        for i in range(num_outputs):
-            total_mah_scores.append([])
+        num_layers = 13
+        total_scores = []
+        for i in range(num_layers):
+            total_scores.append([])
 
         for batch in test_dataloader:
             batch = tuple(t.to(device) for t in batch)
@@ -138,16 +137,16 @@ class our_model(ClassificationModel):
             for i in range(len(batch_all_features)):
                 batch_sample_mean = sample_mean[i]
                 out_features = batch_all_features[i]
-                # zero_f = out_features - batch_sample_mean    # bs x hidden_dim
-                # l2_distance = torch.norm(zero_f, dim=1)
-                # total_mah_scores[i].extend(l2_distance.cpu().numpy())
-                cosine_sim = cosine_sim_nn(batch_sample_mean.unsqueeze(0), out_features)
-                total_mah_scores[i].extend(cosine_sim.cpu().numpy())
+                zero_f = out_features - batch_sample_mean    # bs x hidden_dim
+                l2_distance = torch.norm(zero_f, dim=1)
+                total_scores[i].extend(l2_distance.cpu().numpy())
+                # cosine_sim = cosine_sim_nn(batch_sample_mean.unsqueeze(0), out_features)
+                # total_mah_scores[i].extend(cosine_sim.cpu().numpy())
 
-        for i in range(len(total_mah_scores)):
-            total_mah_scores[i] = np.expand_dims(np.array(total_mah_scores[i]), axis=1)
+        for i in range(len(total_scores)):
+            total_scores[i] = np.expand_dims(np.array(total_scores[i]), axis=1)
         
-        return np.concatenate(total_mah_scores, axis=1)
+        return np.concatenate(total_scores, axis=1)
 
 
     def get_one_layer_feature(self, input_sentences, use_layer=-1, use_cls=True):
@@ -188,11 +187,13 @@ class our_model(ClassificationModel):
         all_feature_list = []
         for i in range(len(all_hidden_feats)):
             if use_cls:
-                # pooled_feats = self.model.bert.pooler(all_hidden_feats[i]).detach()  # bs x max_len x 768 -> bs x 768
-                # pooled_feats = self.model.roberta.pooler(all_hidden_feats[i]).detach()  # bs x max_len x 768 -> bs x 768
-                pooled_feats = all_hidden_feats[i][:,0].detach().data.cpu()  # bs x max_len x 768 -> bs x 768
+                if "roberta" in str(type(self.model)):   # a dumb way... to use the pooler layer
+                    pooled_feats = self.model.roberta.pooler(all_hidden_feats[i]).detach()  # bs x max_len x 768 -> bs x 768
+                else:
+                    pooled_feats = self.model.bert.pooler(all_hidden_feats[i]).detach()  # bs x max_len x 768 -> bs x 768
+                # pooled_feats = all_hidden_feats[i][:,0].detach().data.cpu()  # bs x max_len x 768 -> bs x 768
                 # print (pooled_feats.shape)
             else:
-                pooled_feats = torch.mean(all_hidden_feats[i], dim=1, keepdim=False).detach().data.cpu()   # bs x max_len x 768 -> bs x 768
-            all_feature_list.append(pooled_feats)   # 13 list of bs x 768
+                pooled_feats = torch.mean(all_hidden_feats[i], dim=1, keepdim=False).detach()  # bs x max_len x 768 -> bs x 768
+            all_feature_list.append(pooled_feats.data)   # 13 list of bs x 768
         return all_feature_list

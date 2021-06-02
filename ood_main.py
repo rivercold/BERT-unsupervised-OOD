@@ -274,7 +274,7 @@ def single_layer_OOD_detect(args):
         # pickle.dump(d, f)
     
 
-def MDF_OOD_detect(args):
+def MDF_OOD_detect(args, distance="mahalanobis"):
     data_type = args.data_type.strip()
     print("data type %s"%( data_type))
     if args.load_path:
@@ -324,12 +324,15 @@ def MDF_OOD_detect(args):
         else:
             print ("---------- Use AVG embebeddings to represent sequence ----------")
         mean_list, precision_list = model.sample_X_estimator(train_df['text'].values.tolist(), use_cls)
-        # test_mah_vanlia = model.get_alternative_distance_score(test_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
-        # ood_mah_vanlia = model.get_alternative_distance_score(ood_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
-        # train_mah_vanlia = model.get_alternative_distance_score(train_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
-        test_mah_vanlia = model.get_unsup_Mah_score(test_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
-        ood_mah_vanlia = model.get_unsup_Mah_score(ood_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
-        train_mah_vanlia = model.get_unsup_Mah_score(train_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
+        
+        if distance == "l2":   #  baseline of EDF
+            test_mah_vanlia = model.get_alternative_distance_score(test_df['text'].values.tolist(), mean_list, use_cls)[:, 1:]
+            ood_mah_vanlia = model.get_alternative_distance_score(ood_df['text'].values.tolist(), mean_list, use_cls)[:, 1:]
+            train_mah_vanlia = model.get_alternative_distance_score(train_df['text'].values.tolist(), mean_list, use_cls)[:, 1:]
+        else:    # MDF
+            test_mah_vanlia = model.get_unsup_Mah_score(test_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
+            ood_mah_vanlia = model.get_unsup_Mah_score(ood_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
+            train_mah_vanlia = model.get_unsup_Mah_score(train_df['text'].values.tolist(), mean_list, precision_list, use_cls)[:, 1:]
 
         ood_labels = np.ones(shape=(ood_mah_vanlia.shape[0], ))
         test_labels = np.zeros(shape=(test_mah_vanlia.shape[0], ))

@@ -6,7 +6,9 @@ Code for ACL 2021 paper "Unsupervised Out-of-Domain Detection via Pre-trained Tr
 * Python 3.7.3
 * PyTorch 1.2
 * Transformers 2.7.0
-* SimpleTransformer
+* simpletransformers 0.22.1
+
+I do notice this repo is not compatabile with the newest version of Transformers (4.6.1) and simpletransformers (0.61.6). I will try to address this issue in a new branch ASAP. 
 
 ## Overview
 ![An overview of using Mahalanobis distance features (MDF) extracted from a pre-trained transformer $f$ to detect out-of-domain data.](overview.jpg)
@@ -17,7 +19,7 @@ Use the command
 python ood_main.py \
   --method MDF \
   --data_type clinic \
-  --model_class bert \
+  --model_class bert
 ```
 
 To run baselines, change MDF to one from ``single_layer_bert``, ``tf-idf`` and ``MSP`` (should load a BCAD mdoel). 

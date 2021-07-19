@@ -8,7 +8,7 @@ Code for ACL 2021 paper "Unsupervised Out-of-Domain Detection via Pre-trained Tr
 * Transformers 2.7.0
 * simpletransformers 0.22.1
 
-I do notice this repo is not compatabile with the newest version of Transformers (4.6.1) and simpletransformers (0.61.6). I will try to address this issue in a new branch ASAP. 
+I do notice this repo is not compatabile with the newest version of Transformers (4.6.1) and simpletransformers (0.61.6). I will try to address this issue in a new branch if requested. 
 
 ## Overview
 ![An overview of using Mahalanobis distance features (MDF) extracted from a pre-trained transformer $f$ to detect out-of-domain data.](overview.jpg)
@@ -64,10 +64,10 @@ You can also downloaded our fine-tuned RoBERTa (IMLM+BCAD) models for SST and CL
 <!-- 
 ```
 @inproceedings{xu2021unsupervised,
-  title={Leveraging Just a Few Keywords for Fine-Grained Aspect Detection Through Weakly Supervised Co-Training},
-  author={Karamanolakis, Giannis and Hsu, Daniel and Gravano, Luis},
-  booktitle={Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing and the 9th International Joint Conference on Natural Language Processing (EMNLP-IJCNLP)},
-  pages={4603--4613},
-  year={2019}
+  title={Unsupervised Out-of-Domain Detection via Pre-trained Transformers},
+  author={Keyang Xu and Tongzheng Ren and Shikun Zhang and Yihao Feng and Caiming Xiong},
+  booktitle={Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics, ACL 2021},
+  url       = {https://arxiv.org/abs/2106.00948},
+  year={2021}
 }
 ``` -->

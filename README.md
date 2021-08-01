@@ -65,12 +65,8 @@ You can also downloaded our fine-tuned RoBERTa (IMLM+BCAD) models for SST and CL
 
 @inproceedings{xu-etal-2021-unsupervised,
     title = "Unsupervised Out-of-Domain Detection via Pre-trained Transformers",
-    author = "Xu, Keyang  and
-      Ren, Tongzheng  and
-      Zhang, Shikun  and
-      Feng, Yihao  and
-      Xiong, Caiming",
-    booktitle = "Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers)",
+    author = "Xu, Keyang  and Ren, Tongzheng  and Zhang, Shikun  and Feng, Yihao  and Xiong, Caiming",
+    booktitle = "Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural    Language Processing (Volume 1: Long Papers)",
     month = aug,
     year = "2021",
     address = "Online",

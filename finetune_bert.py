@@ -78,9 +78,9 @@ def finetune_bcad(args):
     print (output_dir)
     os.makedirs(output_dir, exist_ok=True)
     if data_type == "sst":
-        train_df = load_extra_dataset("./dataset/sst-train.txt")
-        eval_df = load_extra_dataset("./dataset/sst-dev.txt")
-        test_df = load_extra_dataset("./dataset/sst-test.txt")
+        train_df = load_extra_dataset("./dataset/sst/sst-train.txt")
+        eval_df = load_extra_dataset("./dataset/sst/sst-dev.txt")
+        test_df = load_extra_dataset("./dataset/sst/sst-test.txt")
         for df in [train_df, test_df, eval_df]:
             set_binary_label(df, indomain=True) # set label to one (in domain)
     else:
@@ -170,8 +170,8 @@ def finetune_imlm(args):
     test_file = os.path.join(output_dir, 'test.txt')
     if not (os.path.exists(train_file) and os.path.exists(eval_file)):
         if data_type == "sst":
-            train_df = load_extra_dataset("./dataset/sst-train.txt", label=1)
-            eval_df = load_extra_dataset("./dataset/sst-dev.txt", label=1)
+            train_df = load_extra_dataset("./dataset/sst/sst-train.txt", label=1)
+            eval_df = load_extra_dataset("./dataset/sst/sst-dev.txt", label=1)
             # test_df = load_extra_dataset("./dataset/sst-test.txt", label=1)
         else:
             train_df = load_dataset('clinc150_train', data_type=data_type)

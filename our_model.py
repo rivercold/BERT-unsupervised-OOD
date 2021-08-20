@@ -18,12 +18,91 @@ from simpletransformers.classification import ClassificationModel
 from tqdm import tqdm
 import pdb
 
+from transformers import (
+    WEIGHTS_NAME,
+    BertConfig,
+    BertTokenizer,
+    RobertaConfig,
+    RobertaTokenizer
+)
+from simpletransformers.classification.transformer_models.bert_model import BertForSequenceClassification
+from simpletransformers.classification.transformer_models.roberta_model import RobertaForSequenceClassification
+from simpletransformers.config.global_args import global_args
 
 class our_model(ClassificationModel):
     def __init__(self, model_type, model_name, num_labels=None, weight=None, args=None, use_cuda=True, cuda_device=-1, **kwargs):
-        super().__init__(model_type, model_name, num_labels, weight, args, use_cuda, cuda_device, **kwargs)
+        # super().__init__(model_type, model_name, num_labels, weight, args, use_cuda, cuda_device, **kwargs)
+        MODEL_CLASSES = {
+            "bert": (BertConfig, BertForSequenceClassification, BertTokenizer),
+            "roberta": (RobertaConfig, RobertaForSequenceClassification, RobertaTokenizer)
+        }
+
+        if args and 'manual_seed' in args:
+            random.seed(args['manual_seed'])
+            np.random.seed(args['manual_seed'])
+            torch.manual_seed(args['manual_seed'])
+            if 'n_gpu' in args and args['n_gpu'] > 0:
+                torch.cuda.manual_seed_all(args['manual_seed'])
+
+        config_class, model_class, tokenizer_class = MODEL_CLASSES[model_type]
+        if num_labels:
+            self.config = config_class.from_pretrained(model_name, num_labels=num_labels, output_hidden_states=True, **kwargs)
+            self.num_labels = num_labels
+        else:
+            self.config = config_class.from_pretrained(model_name, output_hidden_states=True, **kwargs)
+            self.num_labels = self.config.num_labels
+        self.weight = weight
+
+        if use_cuda:
+            if torch.cuda.is_available():
+                if cuda_device == -1:
+                    self.device = torch.device("cuda")
+                else:
+                    self.device = torch.device(f"cuda:{cuda_device}")
+            else:
+                raise ValueError(
+                    "'use_cuda' set to True when cuda is unavailable."
+                    " Make sure CUDA is available or set use_cuda=False."
+                )
+        else:
+            self.device = "cpu"
+
+        if self.weight:
+
+            self.model = model_class.from_pretrained(
+                model_name, config=self.config, weight=torch.Tensor(self.weight).to(self.device), **kwargs,
+            )
+        else:
+            self.model = model_class.from_pretrained(model_name, config=self.config, **kwargs)
+
+        self.results = {}
+
+        self.args = {
+            "sliding_window": False,
+            "tie_value": 1,
+            "stride": 0.8,
+            "regression": False,
+        }
+
+        self.args.update(global_args)
+
+        if not use_cuda:
+            self.args["fp16"] = False
+
+        if args:
+            self.args.update(args)
+
+        self.tokenizer = tokenizer_class.from_pretrained(model_name, do_lower_case=self.args["do_lower_case"], **kwargs)
+
+        self.args["model_name"] = model_name
+        self.args["model_type"] = model_type
+
+        if self.args["wandb_project"] and not wandb_available:
+            warnings.warn("wandb_project specified but wandb is not available. Wandb disabled.")
+            self.args["wandb_project"] = None
         print ("Use SimpleTransformers ClassificationModel")
     
+
     def sample_X_estimator(self, input_sentences, use_cls=True):
         device = self.device 
         model = self.model 
@@ -181,7 +260,7 @@ class our_model(ClassificationModel):
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             position_ids=position_ids,
-            head_mask=head_mask,
+            head_mask=head_mask
         )
         all_hidden_feats = outputs[1]   # list (13) of bs x length x hidden
         all_feature_list = []

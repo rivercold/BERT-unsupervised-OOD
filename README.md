@@ -1,5 +1,5 @@
 # BERT-unsupervised-OOD
-Code for ACL 2021 paper "Unsupervised Out-of-Domain Detection via Pre-trained Transformers" by Keyang Xu, Tongzheng Ren, Shikun Zhang, Yihao Feng and Caiming Xiong.
+Code for ACL 2021 paper "Unsupervised Out-of-Domain Detection via Pre-trained Transformers" by Keyang Xu, Tongzheng Ren, Shikun Zhang, Yihao Feng and Caiming Xiong. (https://arxiv.org/pdf/2106.00948.pdf)
 
 ## Requirements
 
@@ -55,7 +55,7 @@ python ood_main.py \
   --load_path  ./models/roberta_clinic_ft_IMLM_BCAD
 ```
 
-You can also downloaded our fine-tuned RoBERTa (IMLM+BCAD) models for SST and CLINIC150 [here](https://drive.google.com/drive/folders/1CVKEITegBMaPRwfIUtNktBhpTAjzqhYW?usp=sharing). 
+You can also downloaded our fine-tuned (Ro)BERT(a) (IMLM+BCAD) models for SST and CLINIC150 [here](https://drive.google.com/drive/folders/1CVKEITegBMaPRwfIUtNktBhpTAjzqhYW?usp=sharing). 
 
 
 

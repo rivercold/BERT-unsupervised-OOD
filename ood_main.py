@@ -318,7 +318,7 @@ def MDF_OOD_detect(args, distance="mahalanobis"):
         test_df  = load_dataset('clinc150_test', data_type=data_type)
 
     print ("train", len(train_df), "test", len(test_df), "ood", len(ood_df))
-    for use_cls in [True, False]:
+    for use_cls in [False, True]:
         if use_cls:
             print ("---------- Use [CLS] token to represent sequence ----------")
         else:
